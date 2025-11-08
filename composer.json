@@ -1,0 +1,21 @@
+{
+    "name": "fasano/phpunit-oop",
+    "description": "Object-oriented test case design for PHPUnit",
+    "type": "library",
+    "require-dev": {
+        "phpunit/phpunit": "^12.4"
+    },
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "Fasano\\PhpUnitOopCases\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Nicolas Fasano",
+            "email": "fasano.nm@gmail.com"
+        }
+    ],
+    "require": {}
+}
