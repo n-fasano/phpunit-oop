@@ -27,7 +27,7 @@ A common reflex is to group test cases using data providers:
 ```php
 class DivisionTest extends TestCase // This is still a test suite
 {
-    public function testDivisionByZeroError(): void // This is still a test case
+    public function testDivisionByZero(): void // This is still a test case
     {
         $this->expectException(new DivisionByZeroError);
 
@@ -59,7 +59,7 @@ class DivisionTest extends TestCase
     public function test(
         int|float $dividend,
         int|float $divisor,
-        int|float|null $result,
+        int|float|null $expectedResult,
         ?Throwable $exception = null,
     ): void {
         if (null !== $exception) {
