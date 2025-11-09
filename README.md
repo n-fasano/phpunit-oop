@@ -52,7 +52,7 @@ class SuccessCase extends TestCase
 }
 ```
 
-The `verify()` method contains your assertions. It's called automatically by the test runner.
+The `verify()` method contains your assertions. It is automatically called by the test runner.
 
 ### Assert
 

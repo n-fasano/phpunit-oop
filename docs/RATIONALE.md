@@ -2,115 +2,64 @@
 
 Traditional PHPUnit tests suffer from a terminology mismatch:
 ```php
-class PeriodsOverlapTest extends TestCase // This is actually a test suite
+class DivisionTest extends TestCase // This is actually a test suite
 {
-    public function testNoOverlap(): void // This is a test case
+    public function testIntegerDivision(): void // This is a test case
     {
-        $periodA = Period::create(...);
-        $periodB = Period::create(...);
-
-        self::assertFalse($periodA->overlapsWith($periodB));
+        self::assertEquals(3, Math::div(6, 2));
     }
 
-    public function testPartialOverlap(): void // This is a test case
+    public function testFloatDivision(): void // This is a test case
     {
-        $periodA = Period::create(...);
-        $periodB = Period::create(...);
-
-        self::assertTrue($periodA->overlapsWith($periodB));
+        self::assertEquals(3.25, Math::div(6.5, 2));
     }
 
-    public function testPartialOverlap(): void // This is a test case
+    public function testDivisionByZero(): void // This is a test case
     {
-        $periodA = Period::create(...);
-        $periodB = Period::create(...);
+        $this->expectException(new DivisionByZeroError);
 
-        self::assertTrue($periodA->overlapsWith($periodB));
+        Math::div(6, 0);
     }
 }
 ```
 
-This is alleviated by data providers, but not fully:
+A common reflex is to group test cases using data providers:
 ```php
-class PeriodsOverlapTest extends TestCase // This is still a test suite
+class DivisionTest extends TestCase // This is still a test suite
 {
-    public function testNoOverlap(): void // This is still a test case
+    public function testDivisionByZeroError(): void // This is still a test case
     {
-        $periodA = Period::create(...);
-        $periodB = Period::create(...);
+        $this->expectException(new DivisionByZeroError);
 
-        self::assertFalse($periodA->overlapsWith($periodB));
+        Math::div(6, 0);
     }
 
-    #[DataProvider('overlapCases')]
-    public function testOverlap( // Now this is a test suite too
-        Period $periodA,
-        Period $periodB,
-    ): void {
-        self::assertTrue($periodA->overlapsWith($periodB));
-    }
-
-    public function overlapCases(): iterable
-    {
-        yield 'Partial overlap' => [
-            Period::create(...),
-            Period::create(...),
-        ];
-
-        yield 'Complete overlap' => [
-            Period::create(...),
-            Period::create(...),
-        ];
-    }
-}
-```
-
-In that last example, you may have thought: "But testNoOverlap could also be abstracted away with the other cases by parameterizing the expected result!". And you'd be right.
-
-```php
-class PeriodsOverlapTest extends TestCase // This is still a test suite
-{
     #[DataProvider('cases')]
-    public function test( // This is now just a test runner
-        Period $periodA,
-        Period $periodB,
-        bool $overlaps,
+    public function testDivision( // Now this is a test suite too
+        int|float $dividend,
+        int|float $divisor,
+        int|float $result,
     ): void {
-        self::assertSame($overlaps, $periodA->overlapsWith($periodB));
+        self::assertEquals($result, Math::div($dividend, $divisor));
     }
 
-    public function cases(): iterable // And these are our cases
+    public function cases(): iterable
     {
-        yield 'No overlap' => [
-            Period::create(...),
-            Period::create(...),
-            false,
-        ];
-
-        yield 'Partial overlap' => [
-            Period::create(...),
-            Period::create(...),
-            true,
-        ];
-
-        yield 'Complete overlap' => [
-            Period::create(...),
-            Period::create(...),
-            true,
-        ];
+        yield 'Integer division' => [6, 2, 3];
+        yield 'Float division' => [6.5, 2, 3.25];
     }
 }
 ```
 
-However parameterization is not a silver bullet:
+Our error case is still separate, so let's parameterize:
 ```php
 class DivisionTest extends TestCase
 {
     #[DataProvider('cases')]
     public function test(
-        int|float $a,
-        int|float $b,
-        int|float|null $expectedResult,
+        int|float $dividend,
+        int|float $divisor,
+        int|float|null $result,
         ?Throwable $exception = null,
     ): void {
         if (null !== $exception) {
@@ -122,10 +71,6 @@ class DivisionTest extends TestCase
         if (null !== $expectedResult) {
             self::assertSame($expectedResult, $result);
         }
-
-        /**
-         * This is clunky, inelegant, and not type safe.
-         */
     }
 
     public function cases(): iterable
@@ -136,6 +81,8 @@ class DivisionTest extends TestCase
     }
 }
 ```
+
+We've managed to unify our test runner and cases! Buuut... Our test is now clunky, inelegant, and not type safe.
 
 Problems with classic approaches:
 - **Semantic confusion**: A "TestCase" class actually contains multiple test cases
@@ -162,9 +109,9 @@ class DivisionTest extends TestSuite
 class LegalDivisionCase extends TestCase
 {
     public function __construct(
-        protected readonly int $a,
-        protected readonly int $b,
-        protected readonly int $result,
+        protected readonly int|float $a,
+        protected readonly int|float $b,
+        protected readonly int|float $result,
     ) {}
 
     public function verify(): void
@@ -176,8 +123,8 @@ class LegalDivisionCase extends TestCase
 class IllegalDivisionCase extends TestCase
 {
     public function __construct(
-        protected readonly int $a,
-        protected readonly int $b,
+        protected readonly int|float $a,
+        protected readonly int|float $b,
         protected readonly Throwable $error,
     ) {}
 
@@ -187,43 +134,3 @@ class IllegalDivisionCase extends TestCase
     }
 }
 ```
-
-Other examples:
-```php
-class IsOverlapping extends AbstractOverlapCase
-{
-    public function verify(): void
-    {
-        Assert::true($this->periodA->isOverlapping($this->periodB));
-        Assert::true($this->periodB->isOverlapping($this->periodA));
-    }
-}
-
-class IsNotOverlapping extends AbstractOverlapCase
-{
-    public function verify(): void
-    {
-        Assert::false($this->periodA->isOverlapping($this->periodB));
-        Assert::false($this->periodB->isOverlapping($this->periodA));
-    }
-}
-
-class IsBefore extends AbstractBeforeAfterCase
-{
-    public function verify(Assert $assert): void
-    {
-        $assert->true($this->period->isBefore($this->date));
-        $assert->false($this->period->isAfter($this->date));
-    }
-}
-
-class IsNotBefore extends AbstractBeforeAfterCase
-{
-    public function verify(Assert $assert): void
-    {
-        $assert->false($this->period->isBefore($this->date));
-    }
-}
-```
-
-Notice the asymmetry between `IsBefore` and `IsNotBefore`? Or the inverse testing in overlap cases? All of these are logical variations that are invisibilized by parameterization.

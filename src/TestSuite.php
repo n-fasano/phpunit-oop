@@ -13,6 +13,9 @@ abstract class TestSuite extends PhpUnitTestSuite
         $case->verify();
     }
 
+    /**
+     * Adapts the individual cases into arrays to fit expected format.
+     */
     public static function provider(): iterable
     {
         foreach (static::cases() as $id => $case) {
