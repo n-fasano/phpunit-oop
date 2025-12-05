@@ -2,6 +2,7 @@
 
 namespace Fasano\PhpUnitOop;
 
+use Closure;
 use PHPUnit\Framework\Assert as PhpUnitAssert;
 use Throwable;
 
@@ -22,14 +23,15 @@ class Assert
         PhpUnitAssert::assertFalse($condition, $message);
     }
 
-    public static function throws(Throwable $expected, callable $function): void
+    public static function throws(Throwable $expected, Closure $function): void
     {
         $didThrow = false;
 
         try {
             $function();    
         } catch (Throwable $thrown) {
-            Assert::equals($expected, $thrown);
+            Assert::equals($expected::class, $thrown::class);
+            Assert::equals($expected->getMessage(), $thrown->getMessage());
             $didThrow = true;
         }
 
